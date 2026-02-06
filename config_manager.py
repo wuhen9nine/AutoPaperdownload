@@ -7,30 +7,55 @@ import sys
 import json
 import re
 
+# ==============================================================================
+#  【全局配置区】 - 在此处修改文件名和基础设置
+# ==============================================================================
+
+# 1. 基础路径配置 (自动获取当前脚本所在文件夹的绝对路径)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 2. 核心 Python 脚本文件名配置
+SCRIPT_NAMES = {
+    "getdoi": "getdoi_helper.py",       # PubMed 调度脚本
+    "paper": "Paperdownload.py",        # 正文下载脚本
+    "si": "SIdownload.py",              # 补充材料下载脚本
+    "clean": "筛选文件大小.py"            # 文件清理脚本
+}
+
+# 3. 配置文件 JSON 文件名配置
+JSON_FILENAMES = {
+    "paper": "Paperkeyword.json",       # 关键词配置
+    "login": "LoginConfig.json",        # 登录域名配置
+    "si": "SIkeyword.json",             # SI 关键词配置
+    "settings": "DownloadSettings.json",# 下载参数配置
+    "templates": "DownloadTemplates.json",# 模板链接配置
+    "branch": "DomainBranch.json"       # 域名分支配置
+}
+
+# ==============================================================================
+#  【主程序逻辑】
+# ==============================================================================
+
 class PaperAutomationConsole:
     def __init__(self, root):
         self.root = root
-        self.root.title("论文下载全流程自动化管理控制台 - 集成版")
+        self.root.title("论文下载全流程自动化管理控制台")
         self.root.geometry("1200x900")
         
-        # 定义核心脚本名称
+        # --- 初始化路径映射 (将配置区的文件名转换为绝对路径) ---
         self.SCRIPTS = {
-            "getdoi": "getdoi_helper.py",
-            "paper": "Paperdownload.py",
-            "si": "SIdownload.py",
-            "clean": "筛选文件大小.py"
+            key: os.path.join(BASE_DIR, filename) 
+            for key, filename in SCRIPT_NAMES.items()
         }
         
-        # 定义管理的文件映射
         self.json_files = {
-            "paper": "Paperkeyword.json",
-            "login": "LoginConfig.json",
-            "si": "SIkeyword.json",
-            "settings": "DownloadSettings.json",
-            "templates": "DownloadTemplates.json",
-            "branch": "DomainBranch.json"
+            key: os.path.join(BASE_DIR, filename)
+            for key, filename in JSON_FILENAMES.items()
         }
         
+        # 打印调试信息
+        print(f"当前工作基准路径: {BASE_DIR}")
+
         self.setup_ui()
         self.load_all_configs()
 
@@ -38,7 +63,7 @@ class PaperAutomationConsole:
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # 标签页 1: 流程执行与规则向导 (集成原 config_manager 功能)
+        # 标签页 1: 流程执行与规则向导
         self.run_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.run_frame, text=" 任务执行与规则向导 ")
         self.setup_run_and_wizard_tab()
@@ -67,10 +92,11 @@ class PaperAutomationConsole:
             (self.SCRIPTS["si"], "3. 补充材料下载"),
             (self.SCRIPTS["clean"], "4. 坏文件清理")
         ]
-        for filename, nickname in tasks:
+        for filepath, nickname in tasks:
             f = ttk.Frame(left_frame)
             f.pack(fill=tk.X, padx=20, pady=5)
-            ttk.Button(f, text=nickname, width=20, command=lambda s=filename: self.execute_script(s)).pack(side=tk.LEFT)
+            # 使用 lambda 传递绝对路径
+            ttk.Button(f, text=nickname, width=20, command=lambda s=filepath: self.execute_script(s)).pack(side=tk.LEFT)
 
         # 右侧：集成原 config_manager 的引导添加/删除功能
         right_frame = ttk.LabelFrame(self.run_frame, text=" 域名规则向导 (根据添加流程) ")
@@ -106,19 +132,20 @@ class PaperAutomationConsole:
         self.editor_nb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         self.editor_texts = {}
 
-        for key, filename in self.json_files.items():
+        for key, filepath in self.json_files.items():
+            display_name = os.path.basename(filepath)
             frame = ttk.Frame(self.editor_nb)
-            self.editor_nb.add(frame, text=filename)
+            self.editor_nb.add(frame, text=display_name)
             txt = tk.Text(frame, font=('Consolas', 10), undo=True)
             txt.pack(fill=tk.BOTH, expand=True)
-            self.editor_texts[filename] = txt
-            ttk.Button(frame, text=f"保存修改到 {filename}", 
-                       command=lambda f=filename: self.save_json_from_editor(f)).pack(pady=5)
+            self.editor_texts[filepath] = txt
+            ttk.Button(frame, text=f"保存修改到 {display_name}", 
+                       command=lambda f=filepath: self.save_json_from_editor(f)).pack(pady=5)
         
         ttk.Button(self.editor_frame, text="刷新/读取所有 JSON 内容", command=self.refresh_editor_content).pack(pady=5)
 
     def setup_app_config_tab(self):
-        """参数管理页，包含筛选程序配置"""
+        """参数管理页"""
         canvas = tk.Canvas(self.config_frame)
         scrollbar = ttk.Scrollbar(self.config_frame, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
@@ -178,14 +205,13 @@ class PaperAutomationConsole:
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-    # --- 核心向导逻辑 (集成原 config_manager.py) ---
+    # --- 核心向导逻辑 ---
     def wizard_add_data(self):
         raw_url = self.wizard_url.get().strip()
         if not raw_url:
             messagebox.showwarning("提示", "请输入文章完整 URL")
             return
         
-        # 逻辑：url保留www，domain不保留 (根据流程要求 [cite: 5])
         try:
             parts = raw_url.split('/')
             host = parts[2] if len(parts) > 2 else raw_url
@@ -215,9 +241,9 @@ class PaperAutomationConsole:
             branch = self.safe_read_json(self.json_files["branch"])
             if not any(i.get("domain") == domain for i in branch):
                 branch.append({"domain": domain, "direct": "1"})
-                self.safe_write_write(self.json_files["branch"], branch)
+                self.safe_write_json(self.json_files["branch"], branch)
         else:
-            # 检索关键词 [cite: 46]
+            # 检索关键词
             kw = self.wizard_keyword.get().strip()
             paper = self.safe_read_json(self.json_files["paper"])
             paper.append({"url": url, "login": "1", "keywords": [kw]})
@@ -241,7 +267,6 @@ class PaperAutomationConsole:
             return
 
         # 批量清理逻辑
-        # Settings & Templates (Dict)
         for fkey in ["settings", "templates"]:
             data = self.safe_read_json(self.json_files[fkey])
             if target in data.get("domains", data):
@@ -249,12 +274,10 @@ class PaperAutomationConsole:
                 else: del data[target]
                 self.safe_write_json(self.json_files[fkey], data)
 
-        # Login (List)
         login = self.safe_read_json(self.json_files["login"])
         login = [i for i in login if i != target]
         self.safe_write_json(self.json_files["login"], login)
 
-        # Branch & Paper (List of Dict)
         for fkey in ["branch", "paper", "si"]:
             data = self.safe_read_json(self.json_files[fkey])
             data = [i for i in data if i.get("domain", i.get("url")) != target and i.get("url") != "www."+target]
@@ -298,51 +321,80 @@ class PaperAutomationConsole:
                     m = re.search(r'SEARCH_QUERY\s*=\s*"(.*?)"', f.read(), re.DOTALL)
                     if m: self.query_text.delete("1.0", tk.END); self.query_text.insert("1.0", m.group(1))
             self.refresh_editor_content()
-        except Exception as e: print(f"读取出错: {e}")
+        except Exception as e: print(f"读取配置时出错: {e}")
 
+    # ==========================================================================
+    #  【关键修复】保存逻辑：处理 Windows 反斜杠转义问题
+    # ==========================================================================
     def save_all_configs(self):
         try:
-            # 更新 Paperdownload
+            # --- 内部辅助函数：路径转义 ---
+            # 将 Windows 路径中的 单反斜杠(\) 替换为 双反斜杠(\\)
+            # 否则 re.sub 会把 \P 误判为转义字符导致 "bad escape" 错误
+            def get_escaped_path(key):
+                raw_val = self.path_entries[key].get()
+                return raw_val.replace('\\', '\\\\')
+
+            # 更新 Paperdownload.py
             if os.path.exists(self.SCRIPTS["paper"]):
                 with open(self.SCRIPTS["paper"], 'r', encoding='utf-8') as f: c = f.read()
-                c = re.sub(r'DOWNLOAD_PATH\s*=\s*r"[^"]+"', f'DOWNLOAD_PATH = r"{self.path_entries["DOWNLOAD_PATH"].get()}"', c)
-                c = re.sub(r'PAPER_DOWNLOAD_FOLDER\s*=\s*r"[^"]+"', f'PAPER_DOWNLOAD_FOLDER = r"{self.path_entries["PAPER_FOLDER"].get()}"', c)
-                c = re.sub(r'CSV_PATH\s*=\s*r"[^"]+"', f'CSV_PATH = r"{self.path_entries["CSV_PATH"].get()}"', c)
+                
+                # 使用 get_escaped_path 处理所有路径
+                c = re.sub(r'DOWNLOAD_PATH\s*=\s*r"[^"]+"', f'DOWNLOAD_PATH = r"{get_escaped_path("DOWNLOAD_PATH")}"', c)
+                c = re.sub(r'PAPER_DOWNLOAD_FOLDER\s*=\s*r"[^"]+"', f'PAPER_DOWNLOAD_FOLDER = r"{get_escaped_path("PAPER_FOLDER")}"', c)
+                c = re.sub(r'CSV_PATH\s*=\s*r"[^"]+"', f'CSV_PATH = r"{get_escaped_path("CSV_PATH")}"', c)
+                
+                # 数值和布尔值正常处理
                 c = re.sub(r'DELAY_BETWEEN_PAPERS\s*=\s*\d+', f'DELAY_BETWEEN_PAPERS = {self.param_entries["DELAY_PAPER"].get()}', c)
                 c = re.sub(r'PAGE_LOAD_TIMEOUT\s*=\s*\d+', f'PAGE_LOAD_TIMEOUT = {self.param_entries["TIMEOUT"].get()}', c)
                 c = re.sub(r'USE_SELENIUM\s*=\s*(True|False)', f'USE_SELENIUM = {self.sel_var.get()}', c)
+                
                 with open(self.SCRIPTS["paper"], 'w', encoding='utf-8') as f: f.write(c)
 
-            # 更新 SIdownload
+            # 更新 SIdownload.py
             if os.path.exists(self.SCRIPTS["si"]):
                 with open(self.SCRIPTS["si"], 'r', encoding='utf-8') as f: c = f.read()
-                c = re.sub(r'"SI_DOWNLOAD_FOLDER":\s*r"[^"]+"', f'"SI_DOWNLOAD_FOLDER": r"{self.path_entries["SI_FOLDER"].get()}"', c)
+                
+                # 处理 SI 路径
+                c = re.sub(r'"SI_DOWNLOAD_FOLDER":\s*r"[^"]+"', f'"SI_DOWNLOAD_FOLDER": r"{get_escaped_path("SI_FOLDER")}"', c)
                 c = re.sub(r'"DELAY_BETWEEN_PAPERS":\s*\d+', f'"DELAY_BETWEEN_PAPERS": {self.param_entries["DELAY_SI"].get()}', c)
+                
                 with open(self.SCRIPTS["si"], 'w', encoding='utf-8') as f: f.write(c)
 
-            # 更新 筛选
+            # 更新 筛选文件大小.py
             if os.path.exists(self.SCRIPTS["clean"]):
                 with open(self.SCRIPTS["clean"], 'r', encoding='utf-8') as f: c = f.read()
+                
                 c = re.sub(r'SIZE_THRESHOLD\s*=\s*\d+\s*\*\s*1024', f'SIZE_THRESHOLD = {self.param_entries["CLEAN_THRESHOLD"].get()} * 1024', c)
+                
+                # 分别获取转义后的路径
+                p_clean = get_escaped_path("CLEAN_FOLDER")
+                p_in = get_escaped_path("CLEAN_CSV_IN")
+                p_out = get_escaped_path("CLEAN_CSV_OUT")
+                
                 pat = r'(advanced_path_matching_process\(\s*)r"[^"]+",\s*r"[^"]+",\s*r"[^"]+"'
-                rep = rf'\1r"{self.path_entries["CLEAN_FOLDER"].get()}", r"{self.path_entries["CLEAN_CSV_IN"].get()}", r"{self.path_entries["CLEAN_CSV_OUT"].get()}"'
+                rep = rf'\1r"{p_clean}", r"{p_in}", r"{p_out}"'
+                
                 c = re.sub(pat, rep, c)
                 with open(self.SCRIPTS["clean"], 'w', encoding='utf-8') as f: f.write(c)
 
-            # 更新 getdoi
+            # 更新 getdoi_helper.py
             if os.path.exists(self.SCRIPTS["getdoi"]):
                 with open(self.SCRIPTS["getdoi"], 'r', encoding='utf-8') as f: c = f.read()
                 q = self.query_text.get("1.0", tk.END).strip().replace('\n', '')
                 c = re.sub(r'SEARCH_QUERY\s*=\s*".*?"', f'SEARCH_QUERY = "{q}"', c, flags=re.DOTALL)
                 with open(self.SCRIPTS["getdoi"], 'w', encoding='utf-8') as f: f.write(c)
+                
             messagebox.showinfo("成功", "所有脚本参数同步保存成功")
-        except Exception as e: messagebox.showerror("失败", str(e))
+        except Exception as e: 
+            messagebox.showerror("失败", f"保存失败:\n{str(e)}")
 
     # --- 辅助方法 ---
-    def execute_script(self, name):
+    def execute_script(self, filepath):
+        """filepath 已经是绝对路径"""
         def run():
-            self._fix_error(name)
-            subprocess.Popen([sys.executable, name], creationflags=subprocess.CREATE_NEW_CONSOLE)
+            self._fix_error(filepath)
+            subprocess.Popen([sys.executable, filepath], creationflags=subprocess.CREATE_NEW_CONSOLE)
         threading.Thread(target=run, daemon=True).start()
 
     def run_full_automation(self):
@@ -357,19 +409,21 @@ class PaperAutomationConsole:
             with open(filename, 'w', encoding='utf-8') as f: f.write(fixed)
 
     def refresh_editor_content(self):
-        for filename, txt in self.editor_texts.items():
+        # 遍历绝对路径的字典
+        for filepath, txt in self.editor_texts.items():
             txt.delete("1.0", tk.END)
-            txt.insert("1.0", json.dumps(self.safe_read_json(filename), indent=4, ensure_ascii=False))
+            txt.insert("1.0", json.dumps(self.safe_read_json(filepath), indent=4, ensure_ascii=False))
 
-    def save_json_from_editor(self, filename):
+    def save_json_from_editor(self, filepath):
         try:
-            d = json.loads(self.editor_texts[filename].get("1.0", tk.END).strip())
-            self.safe_write_json(filename, d)
-            messagebox.showinfo("成功", f"{filename} 已保存")
+            d = json.loads(self.editor_texts[filepath].get("1.0", tk.END).strip())
+            self.safe_write_json(filepath, d)
+            messagebox.showinfo("成功", f"{os.path.basename(filepath)} 已保存")
         except Exception as e: messagebox.showerror("错误", str(e))
 
     def safe_read_json(self, f):
-        if not os.path.exists(f): return {"domains":{}} if "Settings" in f else []
+        if not os.path.exists(f): 
+            return {"domains":{}} if "Settings" in f else []
         with open(f, 'r', encoding='utf-8') as fl: return json.load(fl)
 
     def safe_write_json(self, f, data):
@@ -380,7 +434,11 @@ class PaperAutomationConsole:
 
     def browse_path(self, key):
         p = filedialog.askopenfilename() if "CSV" in key else filedialog.askdirectory()
-        if p: self.path_entries[key].delete(0, tk.END); self.path_entries[key].insert(0, p)
+        if p: 
+            # 转换为绝对路径
+            abs_p = os.path.abspath(p)
+            self.path_entries[key].delete(0, tk.END)
+            self.path_entries[key].insert(0, abs_p)
 
 if __name__ == "__main__":
     root = tk.Tk()
