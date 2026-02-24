@@ -19,7 +19,9 @@ SCRIPT_NAMES = {
     "getdoi": "getdoi_helper.py",       # PubMed 调度脚本
     "paper": "Paperdownload.py",        # 正文下载脚本
     "si": "SIdownload.py",              # 补充材料下载脚本
-    "clean": "筛选文件大小.py"            # 文件清理脚本
+    "clean": "筛选文件大小.py",            # 文件清理脚本
+    "csv_turner": "Csv_Turner_strenth.py", # 失败 DOI 提取脚本
+    "doiexacter": "doiexacter.py"       # 指定文档 DOI 提取脚本 (新增)
 }
 
 # 3. 配置文件 JSON 文件名配置
@@ -39,8 +41,8 @@ JSON_FILENAMES = {
 class PaperAutomationConsole:
     def __init__(self, root):
         self.root = root
-        self.root.title("论文下载全流程自动化管理控制台 - 集成版 (绝对路径修复版)")
-        self.root.geometry("1200x900")
+        self.root.title("论文下载全流程自动化管理控制台")
+        self.root.geometry("1200x950")
         
         # --- 初始化路径映射 (将配置区的文件名转换为绝对路径) ---
         self.SCRIPTS = {
@@ -90,16 +92,17 @@ class PaperAutomationConsole:
             (self.SCRIPTS["getdoi"], "1. PubMed 调度"),
             (self.SCRIPTS["paper"], "2. 论文正文下载"),
             (self.SCRIPTS["si"], "3. 补充材料下载"),
-            (self.SCRIPTS["clean"], "4. 坏文件清理")
+            (self.SCRIPTS["clean"], "4. 坏文件清理"),
+            (self.SCRIPTS["csv_turner"], "5. 提取失败 DOI"),
+            (self.SCRIPTS["doiexacter"], "6. 指定文档 DOI 提取")
         ]
         for filepath, nickname in tasks:
             f = ttk.Frame(left_frame)
             f.pack(fill=tk.X, padx=20, pady=5)
-            # 使用 lambda 传递绝对路径
-            ttk.Button(f, text=nickname, width=20, command=lambda s=filepath: self.execute_script(s)).pack(side=tk.LEFT)
+            ttk.Button(f, text=nickname, width=28, command=lambda s=filepath: self.execute_script(s)).pack(side=tk.LEFT)
 
-        # 右侧：集成原 config_manager 的引导添加/删除功能
-        right_frame = ttk.LabelFrame(self.run_frame, text=" 域名规则向导 (根据添加流程) ")
+        # 右侧：向导功能 (完全保留您要求的 1-2-3 步逻辑)
+        right_frame = ttk.LabelFrame(self.run_frame, text=" 域名规则向导 ")
         right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         ttk.Label(right_frame, text="第一步: 输入文章完整 URL").pack(anchor=tk.W, padx=10, pady=2)
@@ -126,24 +129,6 @@ class PaperAutomationConsole:
         ttk.Button(btn_f, text="✅ 按照向导添加规则", command=self.wizard_add_data).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_f, text="🗑️ 删除该域名所有数据", command=self.wizard_delete_data).pack(side=tk.LEFT, padx=5)
 
-    def setup_json_editor_tab(self):
-        """原有的 JSON 源码编辑功能"""
-        self.editor_nb = ttk.Notebook(self.editor_frame)
-        self.editor_nb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.editor_texts = {}
-
-        for key, filepath in self.json_files.items():
-            display_name = os.path.basename(filepath)
-            frame = ttk.Frame(self.editor_nb)
-            self.editor_nb.add(frame, text=display_name)
-            txt = tk.Text(frame, font=('Consolas', 10), undo=True)
-            txt.pack(fill=tk.BOTH, expand=True)
-            self.editor_texts[filepath] = txt
-            ttk.Button(frame, text=f"保存修改到 {display_name}", 
-                       command=lambda f=filepath: self.save_json_from_editor(f)).pack(pady=5)
-        
-        ttk.Button(self.editor_frame, text="刷新/读取所有 JSON 内容", command=self.refresh_editor_content).pack(pady=5)
-
     def setup_app_config_tab(self):
         """参数管理页"""
         canvas = tk.Canvas(self.config_frame)
@@ -167,7 +152,11 @@ class PaperAutomationConsole:
             ("CSV_PATH", "论文列表 CSV 路径"),
             ("CLEAN_FOLDER", "清理目标文件夹 (筛选程序)"),
             ("CLEAN_CSV_IN", "输入 CSV 路径 (筛选程序)"),
-            ("CLEAN_CSV_OUT", "输出 CSV 路径 (筛选程序)")
+            ("CLEAN_CSV_OUT", "输出 CSV 路径 (筛选程序)"),
+            ("TURNER_IN", "失败提取：输入 CSV"),
+            ("TURNER_OUT", "失败提取：输出 CSV"),
+            ("EXACT_IN", "文档提取：输入源文件 (TXT/RSS)"), # 新增
+            ("EXACT_OUT", "文档提取：目标 CSV 路径")      # 新增
         ]
         for i, (key, label) in enumerate(path_fields):
             ttk.Label(path_group, text=label).grid(row=i, column=0, sticky=tk.W, padx=5, pady=2)
@@ -205,7 +194,24 @@ class PaperAutomationConsole:
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-    # --- 核心向导逻辑 ---
+    def setup_json_editor_tab(self):
+        self.editor_nb = ttk.Notebook(self.editor_frame)
+        self.editor_nb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.editor_texts = {}
+
+        for key, filepath in self.json_files.items():
+            display_name = os.path.basename(filepath)
+            frame = ttk.Frame(self.editor_nb)
+            self.editor_nb.add(frame, text=display_name)
+            txt = tk.Text(frame, font=('Consolas', 10), undo=True)
+            txt.pack(fill=tk.BOTH, expand=True)
+            self.editor_texts[filepath] = txt
+            ttk.Button(frame, text=f"保存修改到 {display_name}", 
+                       command=lambda f=filepath: self.save_json_from_editor(f)).pack(pady=5)
+        
+        ttk.Button(self.editor_frame, text="刷新/读取所有 JSON 内容", command=self.refresh_editor_content).pack(pady=5)
+
+    # --- 核心向导逻辑 (完全恢复您提供的实现) ---
     def wizard_add_data(self):
         raw_url = self.wizard_url.get().strip()
         if not raw_url:
@@ -221,6 +227,8 @@ class PaperAutomationConsole:
 
         # 1. DownloadSettings.json
         settings = self.safe_read_json(self.json_files["settings"])
+        # 处理可能的嵌套结构
+        if "domains" not in settings: settings["domains"] = {}
         settings["domains"][domain] = {
             "use_ctrl_s": not self.is_auto_var.get(),
             "ctrl_s_delay": 40,
@@ -232,7 +240,6 @@ class PaperAutomationConsole:
         # 2. 方式处理
         method = self.method_var.get()
         if method == "1":
-            # 模板
             t_url = self.wizard_template.get().strip()
             templates = self.safe_read_json(self.json_files["templates"])
             templates[domain] = t_url
@@ -243,7 +250,6 @@ class PaperAutomationConsole:
                 branch.append({"domain": domain, "direct": "1"})
                 self.safe_write_json(self.json_files["branch"], branch)
         else:
-            # 检索关键词
             kw = self.wizard_keyword.get().strip()
             paper = self.safe_read_json(self.json_files["paper"])
             paper.append({"url": url, "login": "1", "keywords": [kw]})
@@ -266,13 +272,14 @@ class PaperAutomationConsole:
         if not messagebox.askyesno("确认", f"确定要从所有文件中删除与 {target} 相关的数据吗？"):
             return
 
-        # 批量清理逻辑
-        for fkey in ["settings", "templates"]:
-            data = self.safe_read_json(self.json_files[fkey])
-            if target in data.get("domains", data):
-                if fkey == "settings": del data["domains"][target]
-                else: del data[target]
-                self.safe_write_json(self.json_files[fkey], data)
+        # 批量清理
+        s = self.safe_read_json(self.json_files["settings"])
+        if "domains" in s and target in s["domains"]: del s["domains"][target]
+        self.safe_write_json(self.json_files["settings"], s)
+
+        t = self.safe_read_json(self.json_files["templates"])
+        if target in t: del t[target]
+        self.safe_write_json(self.json_files["templates"], t)
 
         login = self.safe_read_json(self.json_files["login"])
         login = [i for i in login if i != target]
@@ -286,7 +293,7 @@ class PaperAutomationConsole:
         messagebox.showinfo("清理完成", f"已从所有 JSON 中移除 {target}")
         self.refresh_editor_content()
 
-    # --- 脚本参数同步逻辑 ---
+    # --- 脚本参数同步逻辑 (保留原所有正则替换并新增 doiexacter) ---
     def load_all_configs(self):
         try:
             # Paperdownload.py
@@ -320,62 +327,51 @@ class PaperAutomationConsole:
                 with open(self.SCRIPTS["getdoi"], 'r', encoding='utf-8') as f:
                     m = re.search(r'SEARCH_QUERY\s*=\s*"(.*?)"', f.read(), re.DOTALL)
                     if m: self.query_text.delete("1.0", tk.END); self.query_text.insert("1.0", m.group(1))
+
+            # Csv_Turner_strenth.py
+            if os.path.exists(self.SCRIPTS["csv_turner"]):
+                with open(self.SCRIPTS["csv_turner"], 'r', encoding='utf-8') as f: c = f.read()
+                self._fill(self.path_entries["TURNER_IN"], re.search(r'input_file\s*=\s*r"([^"]+)"', c))
+                self._fill(self.path_entries["TURNER_OUT"], re.search(r'output_file\s*=\s*r"([^"]+)"', c))
+
+            # doiexacter.py (新增读取逻辑)
+            if os.path.exists(self.SCRIPTS["doiexacter"]):
+                with open(self.SCRIPTS["doiexacter"], 'r', encoding='utf-8') as f: c = f.read()
+                self._fill(self.path_entries["EXACT_IN"], re.search(r'INPUT_FILE\s*=\s*r"([^"]+)"', c))
+                self._fill(self.path_entries["EXACT_OUT"], re.search(r'CSV_FILE\s*=\s*r"([^"]+)"', c))
+
             self.refresh_editor_content()
         except Exception as e: print(f"读取配置时出错: {e}")
 
-    # ==========================================================================
-    #  【关键修复】保存逻辑：处理 Windows 反斜杠转义问题
-    # ==========================================================================
     def save_all_configs(self):
         try:
-            # --- 内部辅助函数：路径转义 ---
-            # 将 Windows 路径中的 单反斜杠(\) 替换为 双反斜杠(\\)
-            # 否则 re.sub 会把 \P 误判为转义字符导致 "bad escape" 错误
-            def get_escaped_path(key):
-                raw_val = self.path_entries[key].get()
-                return raw_val.replace('\\', '\\\\')
+            def esc(key): return self.path_entries[key].get().replace('\\', '\\\\')
 
             # 更新 Paperdownload.py
             if os.path.exists(self.SCRIPTS["paper"]):
                 with open(self.SCRIPTS["paper"], 'r', encoding='utf-8') as f: c = f.read()
-                
-                # 使用 get_escaped_path 处理所有路径
-                c = re.sub(r'DOWNLOAD_PATH\s*=\s*r"[^"]+"', f'DOWNLOAD_PATH = r"{get_escaped_path("DOWNLOAD_PATH")}"', c)
-                c = re.sub(r'PAPER_DOWNLOAD_FOLDER\s*=\s*r"[^"]+"', f'PAPER_DOWNLOAD_FOLDER = r"{get_escaped_path("PAPER_FOLDER")}"', c)
-                c = re.sub(r'CSV_PATH\s*=\s*r"[^"]+"', f'CSV_PATH = r"{get_escaped_path("CSV_PATH")}"', c)
-                
-                # 数值和布尔值正常处理
+                c = re.sub(r'DOWNLOAD_PATH\s*=\s*r"[^"]+"', f'DOWNLOAD_PATH = r"{esc("DOWNLOAD_PATH")}"', c)
+                c = re.sub(r'PAPER_DOWNLOAD_FOLDER\s*=\s*r"[^"]+"', f'PAPER_DOWNLOAD_FOLDER = r"{esc("PAPER_FOLDER")}"', c)
+                c = re.sub(r'CSV_PATH\s*=\s*r"[^"]+"', f'CSV_PATH = r"{esc("CSV_PATH")}"', c)
                 c = re.sub(r'DELAY_BETWEEN_PAPERS\s*=\s*\d+', f'DELAY_BETWEEN_PAPERS = {self.param_entries["DELAY_PAPER"].get()}', c)
                 c = re.sub(r'PAGE_LOAD_TIMEOUT\s*=\s*\d+', f'PAGE_LOAD_TIMEOUT = {self.param_entries["TIMEOUT"].get()}', c)
                 c = re.sub(r'USE_SELENIUM\s*=\s*(True|False)', f'USE_SELENIUM = {self.sel_var.get()}', c)
-                
                 with open(self.SCRIPTS["paper"], 'w', encoding='utf-8') as f: f.write(c)
 
             # 更新 SIdownload.py
             if os.path.exists(self.SCRIPTS["si"]):
                 with open(self.SCRIPTS["si"], 'r', encoding='utf-8') as f: c = f.read()
-                
-                # 处理 SI 路径
-                c = re.sub(r'"SI_DOWNLOAD_FOLDER":\s*r"[^"]+"', f'"SI_DOWNLOAD_FOLDER": r"{get_escaped_path("SI_FOLDER")}"', c)
+                c = re.sub(r'"SI_DOWNLOAD_FOLDER":\s*r"[^"]+"', f'"SI_DOWNLOAD_FOLDER": r"{esc("SI_FOLDER")}"', c)
                 c = re.sub(r'"DELAY_BETWEEN_PAPERS":\s*\d+', f'"DELAY_BETWEEN_PAPERS": {self.param_entries["DELAY_SI"].get()}', c)
-                
                 with open(self.SCRIPTS["si"], 'w', encoding='utf-8') as f: f.write(c)
 
             # 更新 筛选文件大小.py
             if os.path.exists(self.SCRIPTS["clean"]):
                 with open(self.SCRIPTS["clean"], 'r', encoding='utf-8') as f: c = f.read()
-                
                 c = re.sub(r'SIZE_THRESHOLD\s*=\s*\d+\s*\*\s*1024', f'SIZE_THRESHOLD = {self.param_entries["CLEAN_THRESHOLD"].get()} * 1024', c)
-                
-                # 分别获取转义后的路径
-                p_clean = get_escaped_path("CLEAN_FOLDER")
-                p_in = get_escaped_path("CLEAN_CSV_IN")
-                p_out = get_escaped_path("CLEAN_CSV_OUT")
-                
+                p_cl, p_in, p_out = esc("CLEAN_FOLDER"), esc("CLEAN_CSV_IN"), esc("CLEAN_CSV_OUT")
                 pat = r'(advanced_path_matching_process\(\s*)r"[^"]+",\s*r"[^"]+",\s*r"[^"]+"'
-                rep = rf'\1r"{p_clean}", r"{p_in}", r"{p_out}"'
-                
-                c = re.sub(pat, rep, c)
+                c = re.sub(pat, rf'\1r"{p_cl}", r"{p_in}", r"{p_out}"', c)
                 with open(self.SCRIPTS["clean"], 'w', encoding='utf-8') as f: f.write(c)
 
             # 更新 getdoi_helper.py
@@ -384,22 +380,29 @@ class PaperAutomationConsole:
                 q = self.query_text.get("1.0", tk.END).strip().replace('\n', '')
                 c = re.sub(r'SEARCH_QUERY\s*=\s*".*?"', f'SEARCH_QUERY = "{q}"', c, flags=re.DOTALL)
                 with open(self.SCRIPTS["getdoi"], 'w', encoding='utf-8') as f: f.write(c)
+
+            # 更新 Csv_Turner_strenth.py
+            if os.path.exists(self.SCRIPTS["csv_turner"]):
+                with open(self.SCRIPTS["csv_turner"], 'r', encoding='utf-8') as f: c = f.read()
+                c = re.sub(r'input_file\s*=\s*r"[^"]+"', f'input_file = r"{esc("TURNER_IN")}"', c)
+                c = re.sub(r'output_file\s*=\s*r"[^"]+"', f'output_file = r"{esc("TURNER_OUT")}"', c)
+                with open(self.SCRIPTS["csv_turner"], 'w', encoding='utf-8') as f: f.write(c)
+
+            # 更新 doiexacter.py (新增保存逻辑)
+            if os.path.exists(self.SCRIPTS["doiexacter"]):
+                with open(self.SCRIPTS["doiexacter"], 'r', encoding='utf-8') as f: c = f.read()
+                c = re.sub(r'INPUT_FILE\s*=\s*r"[^"]+"', f'INPUT_FILE = r"{esc("EXACT_IN")}"', c)
+                c = re.sub(r'CSV_FILE\s*=\s*r"[^"]+"', f'CSV_FILE = r"{esc("EXACT_OUT")}"', c)
+                with open(self.SCRIPTS["doiexacter"], 'w', encoding='utf-8') as f: f.write(c)
                 
             messagebox.showinfo("成功", "所有脚本参数同步保存成功")
-        except Exception as e: 
-            messagebox.showerror("失败", f"保存失败:\n{str(e)}")
+        except Exception as e: messagebox.showerror("失败", f"保存失败:\n{str(e)}")
 
-    # --- 辅助方法 ---
     def execute_script(self, filepath):
-        """filepath 已经是绝对路径"""
         def run():
             self._fix_error(filepath)
             subprocess.Popen([sys.executable, filepath], creationflags=subprocess.CREATE_NEW_CONSOLE)
         threading.Thread(target=run, daemon=True).start()
-
-    def run_full_automation(self):
-        if messagebox.askyesno("确认", "启动全自动下载流程？"):
-            self.execute_script(self.SCRIPTS["getdoi"])
 
     def _fix_error(self, filename):
         if not os.path.exists(filename): return
@@ -409,7 +412,6 @@ class PaperAutomationConsole:
             with open(filename, 'w', encoding='utf-8') as f: f.write(fixed)
 
     def refresh_editor_content(self):
-        # 遍历绝对路径的字典
         for filepath, txt in self.editor_texts.items():
             txt.delete("1.0", tk.END)
             txt.insert("1.0", json.dumps(self.safe_read_json(filepath), indent=4, ensure_ascii=False))
@@ -422,8 +424,7 @@ class PaperAutomationConsole:
         except Exception as e: messagebox.showerror("错误", str(e))
 
     def safe_read_json(self, f):
-        if not os.path.exists(f): 
-            return {"domains":{}} if "Settings" in f else []
+        if not os.path.exists(f): return {"domains":{}} if "Settings" in f else []
         with open(f, 'r', encoding='utf-8') as fl: return json.load(fl)
 
     def safe_write_json(self, f, data):
@@ -433,12 +434,15 @@ class PaperAutomationConsole:
         if m: ent.delete(0, tk.END); ent.insert(0, m.group(1))
 
     def browse_path(self, key):
-        p = filedialog.askopenfilename() if "CSV" in key else filedialog.askdirectory()
-        if p: 
-            # 转换为绝对路径
+        p = filedialog.askopenfilename() if "CSV" in key or "IN" in key or "OUT" in key else filedialog.askdirectory()
+        if p:
             abs_p = os.path.abspath(p)
             self.path_entries[key].delete(0, tk.END)
             self.path_entries[key].insert(0, abs_p)
+
+    def run_full_automation(self):
+        if messagebox.askyesno("确认", "启动全自动下载流程？"):
+            self.execute_script(self.SCRIPTS["getdoi"])
 
 if __name__ == "__main__":
     root = tk.Tk()
