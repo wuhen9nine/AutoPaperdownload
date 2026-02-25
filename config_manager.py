@@ -150,13 +150,13 @@ class PaperAutomationConsole:
             ("PAPER_FOLDER", "正文保存文件夹"),
             ("SI_FOLDER", "SI 保存文件夹"),
             ("CSV_PATH", "论文列表 CSV 路径"),
-            ("CLEAN_FOLDER", "清理目标文件夹 (筛选程序)"),
-            ("CLEAN_CSV_IN", "输入 CSV 路径 (筛选程序)"),
-            ("CLEAN_CSV_OUT", "输出 CSV 路径 (筛选程序)"),
+            ("CLEAN_FOLDER", "筛选程序：清理目标文件夹"),
+            ("CLEAN_CSV_IN", "筛选程序：输入 CSV 路径 "),
+            ("CLEAN_CSV_OUT", "筛选程序：输出 CSV 路径 "),
             ("TURNER_IN", "失败提取：输入 CSV"),
             ("TURNER_OUT", "失败提取：输出 CSV"),
-            ("EXACT_IN", "文档提取：输入源文件 (TXT/RSS)"), # 新增
-            ("EXACT_OUT", "文档提取：目标 CSV 路径")      # 新增
+            ("EXACT_IN", "文档提取：源文件路径"), 
+            ("EXACT_OUT", "文档提取：目标 CSV 路径")  
         ]
         for i, (key, label) in enumerate(path_fields):
             ttk.Label(path_group, text=label).grid(row=i, column=0, sticky=tk.W, padx=5, pady=2)

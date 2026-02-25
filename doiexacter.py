@@ -6,8 +6,8 @@ import logging
 # ==============================================================================
 #  【配置参数】 - 由 config_manager.py 自动修改
 # ==============================================================================
-INPUT_FILE = r"D:\Paperdownload\RSS\input.txt" 
-CSV_FILE = r"D:\Paperdownload\PaperDoi_updated.csv"
+INPUT_FILE = r"D:\Paperdownload - 副本\PubMed_RSS_20250926_145335.txt"
+CSV_FILE = r"D:\Paperdownload - 副本\1.csv"
 LOG_FILE = r"D:\Paperdownload\doi_extractor.log"
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
