@@ -62,20 +62,26 @@ python config_manager.py
                   3.修改筛选程序相关配置
                   4.下载正文，点击正文下载，如需下载补充资料，在完成一次正文下载后进行
 
- 网站信息补充：根据域名规则向导，写入信息即可自动将信息导入配置文件中，也可自行修改配置文件中的内容
-              第一步：打开文章网站
+  网站信息补充：根据域名规则向导，写入信息即可自动将信息导入配置文件中，也可自行修改配置文件中的内容
+                  第一步：打开文章网站
                       获取网站：https://onlinelibrary.wiley.com/doi/10.1002/anie.202508314
-              第二步：确认文章下载路径
+              
+                  第二步：确认文章下载路径
+                      
                       2.1自动下载
                           如https://onlinelibrary.wiley.com的下载路径为
                           右键下载按钮后复制出来的链接，
                           https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/anie.202508314?download=true
+                      
                       2.2手动下载
                           如https://pubs.acs.org/doi/10.1021/la061142v的下载路径为点击OpenPdf图标后的这个页面，链接为
                           https://pubs.acs.org/doi/pdf/10.1021/la061142v?ref=article_openPDF，需要进行手动下载
-              第三步：确定获取链接的方式
+              
+                  第三步：确定获取链接的方式
+                      
                       3.1模板下载
                          像https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/anie.202508314?download=true这样的链接可以注意到中间的10.1002/anie.202508314即为文章的doi号，因此像这样的格式相对固定，只改变doi号的网站可以直接套用模板下载
+                      
                       3.2检索下载
                          如果模板下载不行，就进行这种方式，回到文章网站的初始界面，按ctrl+u打开网站的源代码界面，根据第二步获取的下载链接找到其中比较特殊的部分，如
                          https://pubs.acs.org/doi/pdf/10.1021/la061142v?ref=article_openPDF中最后一段“openPDF”比较特殊，可作为关键词，用于检索出文献下载链接。
