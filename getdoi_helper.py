@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 
 # 配置参数
 WEBSITE_URL = "https://pubmed.ncbi.nlm.nih.gov/"
-SEARCH_QUERY = "((Silk fibroin[Title/Abstract] OR SF[Title/Abstract] OR PEG[Title/Abstract] OR Polyethylene glycol[Title/Abstract]) AND (Hydrogel[Title/Abstract] OR Tissue engineering[Title/Abstract] OR adhesive[Title/Abstract] OR adhesion[Title/Abstract])) NOT (review[Publication Type])"
+SEARCH_QUERY = "(PCL) AND (Light curing)"
 OUTPUT_FOLDER = r"D:\Paperdownload\RSS"
 CSV_FILE = r"D:\Paperdownload\PaperDoi.csv"
 BROWSER_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"

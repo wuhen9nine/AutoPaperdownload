@@ -139,7 +139,5 @@ def matches_file_path(csv_cell_value, pdf_filename, pdf_full_path, base_folder):
 # 使用增强版
 if __name__ == "__main__":
     advanced_path_matching_process(
-        r"D:/Paperdownload-xzq/Paper-xzq",
-        r"D:/Paperdownload-xzq/PaperDoi_updated-xzq_failed.csv", 
-        r"D:/Paperdownload-xzq/PaperDoi_updated-xzq-1.csv"
+        r"D:/Paperdownload-xzq/Paper-xzq", r"D:/Paperdownload-xzq/PaperDoi_updated-xzq_failed.csv", r"D:/Paperdownload-xzq/PaperDoi_updated-xzq-1.csv"
     )

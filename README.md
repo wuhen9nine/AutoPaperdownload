@@ -52,7 +52,10 @@ python config_manager.py
 
 
 从零开始流程：
-
+  Git Clone
+  激活虚拟环境：.\venv\Scripts\Activate.ps1
+  安装依赖：pip install -r requirements.txt
+  运行主管理程序：python config_manager.py
   提示词启动：1.在“脚本内部参数管理”标签页输入关键词，保存
              2.返回“任务执行页面”，点击 🚀 启动全自动下载流程
              注：当前支持在pubmed网站上进行检索，且单次只能下载最新的15篇文献

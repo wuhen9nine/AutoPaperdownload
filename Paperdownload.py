@@ -19,7 +19,7 @@ import random
 # 全局配置
 class Config:
     """应用程序配置类"""
-    DOWNLOAD_PATH = r"D:\Paperdownload-xzq\html"  # HTML保存路径
+    DOWNLOAD_PATH = r"D:\PaperTest\html"  # HTML保存路径
     JSON_PATH = r"D:\Paperdownload-xzq\Paperkeyword.json"  # 关键词json路径
     DOMAIN_BRANCH_JSON = r"D:\Paperdownload-xzq\DomainBranch.json"  # 域名分支配置
     DOWNLOAD_TEMPLATE_JSON = r"D:\Paperdownload-xzq\DownloadTemplates.json"  # 下载模板配置
