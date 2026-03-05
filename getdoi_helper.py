@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 WEBSITE_URL = "https://pubmed.ncbi.nlm.nih.gov/"
 SEARCH_QUERY = "(PCL) AND (Light curing)"
 OUTPUT_FOLDER = r"D:\Paperdownload\RSS"
-CSV_FILE = r"D:\Paperdownload\PaperDoi.csv"
+CSV_FILE = r"D:\Paperdownload-xzq\PaperDoi_updated-xzq_failed-1.csv"
 BROWSER_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 RSS_PNG = r"D:\Paperdownload\photos\RSS.png"
 CREATE_PNG = r"D:\Paperdownload\photos\create.png"
