@@ -299,9 +299,9 @@ class PaperAutomationConsole:
             # Paperdownload.py
             if os.path.exists(self.SCRIPTS["paper"]):
                 with open(self.SCRIPTS["paper"], 'r', encoding='utf-8') as f: c = f.read()
-                self._fill_path(self.path_entries["DOWNLOAD_PATH"], c, r'DOWNLOAD_PATH')
-                self._fill_path(self.path_entries["PAPER_FOLDER"], c, r'PAPER_DOWNLOAD_FOLDER')
-                self._fill_path(self.path_entries["CSV_PATH"], c, r'CSV_PATH')
+                self._fill(self.path_entries["DOWNLOAD_PATH"], re.search(r'DOWNLOAD_PATH\s*=\s*r"([^"]+)"', c))
+                self._fill(self.path_entries["PAPER_FOLDER"], re.search(r'PAPER_DOWNLOAD_FOLDER\s*=\s*r"([^"]+)"', c))
+                self._fill(self.path_entries["CSV_PATH"], re.search(r'CSV_PATH\s*=\s*r"([^"]+)"', c))
                 self._fill(self.param_entries["DELAY_PAPER"], re.search(r'DELAY_BETWEEN_PAPERS\s*=\s*(\d+)', c))
                 self._fill(self.param_entries["TIMEOUT"], re.search(r'PAGE_LOAD_TIMEOUT\s*=\s*(\d+)', c))
                 sel = re.search(r'USE_SELENIUM\s*=\s*(True|False)', c)
@@ -310,9 +310,7 @@ class PaperAutomationConsole:
             # SIdownload.py
             if os.path.exists(self.SCRIPTS["si"]):
                 with open(self.SCRIPTS["si"], 'r', encoding='utf-8') as f: c = f.read()
-                # 支持 os.path.join 和 r"..." 两种格式
-                si_val = self._extract_path(c, r'"SI_DOWNLOAD_FOLDER"')
-                if si_val: self.path_entries["SI_FOLDER"].delete(0, tk.END); self.path_entries["SI_FOLDER"].insert(0, si_val)
+                self._fill(self.path_entries["SI_FOLDER"], re.search(r'"SI_DOWNLOAD_FOLDER":\s*r"([^"]+)"', c))
                 self._fill(self.param_entries["DELAY_SI"], re.search(r'"DELAY_BETWEEN_PAPERS":\s*(\d+)', c))
 
             # 筛选文件大小.py
@@ -320,26 +318,9 @@ class PaperAutomationConsole:
                 with open(self.SCRIPTS["clean"], 'r', encoding='utf-8') as f: c = f.read()
                 thresh = re.search(r'SIZE_THRESHOLD\s*=\s*(\d+)\s*\*\s*1024', c)
                 if thresh: self.param_entries["CLEAN_THRESHOLD"].delete(0, tk.END); self.param_entries["CLEAN_THRESHOLD"].insert(0, thresh.group(1))
-                # 支持 os.path.join 和 r"..." 两种格式
-                m = re.search(r'advanced_path_matching_process\(\s*r"([^"]+)"', c)
-                if m:
-                    self._fill(self.path_entries["CLEAN_FOLDER"], m)
-                    self._fill(self.path_entries["CLEAN_CSV_IN"], re.search(r'advanced_path_matching_process\(\s*r"[^"]+",\s*r"([^"]+)"', c))
-                    self._fill(self.path_entries["CLEAN_CSV_OUT"], re.search(r'advanced_path_matching_process\(\s*r"[^"]+",\s*r"[^"]+",\s*r"([^"]+)"', c))
-                else:
-                    # os.path.join 格式
-                    m = re.search(r'advanced_path_matching_process\(\s*(.+?)\s*\)\s*$', c, re.MULTILINE)
-                    if m:
-                        args = m.group(1)
-                        parts = re.findall(r'os\.path\.join\(([^)]+)\)', args)
-                        for i, part in enumerate(parts):
-                            p_args = [a.strip().strip('"').strip("'") for a in part.split(',')]
-                            resolved = [BASE_DIR if a == '_BASE_DIR' else a for a in p_args]
-                            val = os.path.join(*resolved)
-                            keys = ["CLEAN_FOLDER", "CLEAN_CSV_IN", "CLEAN_CSV_OUT"]
-                            if i < len(keys):
-                                self.path_entries[keys[i]].delete(0, tk.END)
-                                self.path_entries[keys[i]].insert(0, val)
+                self._fill(self.path_entries["CLEAN_FOLDER"], re.search(r'advanced_path_matching_process\(\s*r"([^"]+)"', c))
+                self._fill(self.path_entries["CLEAN_CSV_IN"], re.search(r'advanced_path_matching_process\(\s*r"[^"]+",\s*r"([^"]+)"', c))
+                self._fill(self.path_entries["CLEAN_CSV_OUT"], re.search(r'advanced_path_matching_process\(\s*r"[^"]+",\s*r"[^"]+",\s*r"([^"]+)"', c))
 
             # getdoi_helper.py
             if os.path.exists(self.SCRIPTS["getdoi"]):
@@ -350,14 +331,14 @@ class PaperAutomationConsole:
             # Csv_Turner_strenth.py
             if os.path.exists(self.SCRIPTS["csv_turner"]):
                 with open(self.SCRIPTS["csv_turner"], 'r', encoding='utf-8') as f: c = f.read()
-                self._fill_path(self.path_entries["TURNER_IN"], c, r'input_file')
-                self._fill_path(self.path_entries["TURNER_OUT"], c, r'output_file')
+                self._fill(self.path_entries["TURNER_IN"], re.search(r'input_file\s*=\s*r"([^"]+)"', c))
+                self._fill(self.path_entries["TURNER_OUT"], re.search(r'output_file\s*=\s*r"([^"]+)"', c))
 
-            # doiexacter.py
+            # doiexacter.py (新增读取逻辑)
             if os.path.exists(self.SCRIPTS["doiexacter"]):
                 with open(self.SCRIPTS["doiexacter"], 'r', encoding='utf-8') as f: c = f.read()
-                self._fill_path(self.path_entries["EXACT_IN"], c, r'INPUT_FILE')
-                self._fill_path(self.path_entries["EXACT_OUT"], c, r'CSV_FILE')
+                self._fill(self.path_entries["EXACT_IN"], re.search(r'INPUT_FILE\s*=\s*r"([^"]+)"', c))
+                self._fill(self.path_entries["EXACT_OUT"], re.search(r'CSV_FILE\s*=\s*r"([^"]+)"', c))
 
             self.refresh_editor_content()
         except Exception as e: print(f"读取配置时出错: {e}")
@@ -365,21 +346,13 @@ class PaperAutomationConsole:
     def save_all_configs(self):
         try:
             def esc(key): return self.path_entries[key].get().replace('\\', '\\\\')
-            # 通用替换：匹配 r"..." 或 os.path.join(...) 格式，统一写为 r"..."
-            def _sub_path(content, var_name, new_val):
-                for pat in [var_name + r'\s*=\s*r"[^"]+"',
-                            var_name + r'\s*=\s*os\.path\.join\([^)]+\)',
-                            var_name + r'\s*=\s*"[^"]+"']:
-                    if re.search(pat, content):
-                        return re.sub(pat, f'{var_name} = r"{new_val}"', content)
-                return content
 
             # 更新 Paperdownload.py
             if os.path.exists(self.SCRIPTS["paper"]):
                 with open(self.SCRIPTS["paper"], 'r', encoding='utf-8') as f: c = f.read()
-                c = _sub_path(c, 'DOWNLOAD_PATH', esc("DOWNLOAD_PATH"))
-                c = _sub_path(c, 'PAPER_DOWNLOAD_FOLDER', esc("PAPER_FOLDER"))
-                c = _sub_path(c, 'CSV_PATH', esc("CSV_PATH"))
+                c = re.sub(r'DOWNLOAD_PATH\s*=\s*r"[^"]+"', f'DOWNLOAD_PATH = r"{esc("DOWNLOAD_PATH")}"', c)
+                c = re.sub(r'PAPER_DOWNLOAD_FOLDER\s*=\s*r"[^"]+"', f'PAPER_DOWNLOAD_FOLDER = r"{esc("PAPER_FOLDER")}"', c)
+                c = re.sub(r'CSV_PATH\s*=\s*r"[^"]+"', f'CSV_PATH = r"{esc("CSV_PATH")}"', c)
                 c = re.sub(r'DELAY_BETWEEN_PAPERS\s*=\s*\d+', f'DELAY_BETWEEN_PAPERS = {self.param_entries["DELAY_PAPER"].get()}', c)
                 c = re.sub(r'PAGE_LOAD_TIMEOUT\s*=\s*\d+', f'PAGE_LOAD_TIMEOUT = {self.param_entries["TIMEOUT"].get()}', c)
                 c = re.sub(r'USE_SELENIUM\s*=\s*(True|False)', f'USE_SELENIUM = {self.sel_var.get()}', c)
@@ -388,11 +361,7 @@ class PaperAutomationConsole:
             # 更新 SIdownload.py
             if os.path.exists(self.SCRIPTS["si"]):
                 with open(self.SCRIPTS["si"], 'r', encoding='utf-8') as f: c = f.read()
-                si_val = esc("SI_FOLDER")
-                for pat in [r'"SI_DOWNLOAD_FOLDER":\s*r"[^"]+"',
-                            r'"SI_DOWNLOAD_FOLDER":\s*os\.path\.join\([^)]+\)']:
-                    if re.search(pat, c):
-                        c = re.sub(pat, f'"SI_DOWNLOAD_FOLDER": r"{si_val}"', c); break
+                c = re.sub(r'"SI_DOWNLOAD_FOLDER":\s*r"[^"]+"', f'"SI_DOWNLOAD_FOLDER": r"{esc("SI_FOLDER")}"', c)
                 c = re.sub(r'"DELAY_BETWEEN_PAPERS":\s*\d+', f'"DELAY_BETWEEN_PAPERS": {self.param_entries["DELAY_SI"].get()}', c)
                 with open(self.SCRIPTS["si"], 'w', encoding='utf-8') as f: f.write(c)
 
@@ -401,11 +370,8 @@ class PaperAutomationConsole:
                 with open(self.SCRIPTS["clean"], 'r', encoding='utf-8') as f: c = f.read()
                 c = re.sub(r'SIZE_THRESHOLD\s*=\s*\d+\s*\*\s*1024', f'SIZE_THRESHOLD = {self.param_entries["CLEAN_THRESHOLD"].get()} * 1024', c)
                 p_cl, p_in, p_out = esc("CLEAN_FOLDER"), esc("CLEAN_CSV_IN"), esc("CLEAN_CSV_OUT")
-                replacement = rf'\1r"{p_cl}", r"{p_in}", r"{p_out}"'
-                for pat in [r'(advanced_path_matching_process\(\s*)r"[^"]+",\s*r"[^"]+",\s*r"[^"]+"',
-                            r'(advanced_path_matching_process\(\s*)os\.path\.join\([^)]+\),\s*os\.path\.join\([^)]+\),\s*os\.path\.join\([^)]+\)']:
-                    if re.search(pat, c):
-                        c = re.sub(pat, replacement, c); break
+                pat = r'(advanced_path_matching_process\(\s*)r"[^"]+",\s*r"[^"]+",\s*r"[^"]+"'
+                c = re.sub(pat, rf'\1r"{p_cl}", r"{p_in}", r"{p_out}"', c)
                 with open(self.SCRIPTS["clean"], 'w', encoding='utf-8') as f: f.write(c)
 
             # 更新 getdoi_helper.py
@@ -418,15 +384,15 @@ class PaperAutomationConsole:
             # 更新 Csv_Turner_strenth.py
             if os.path.exists(self.SCRIPTS["csv_turner"]):
                 with open(self.SCRIPTS["csv_turner"], 'r', encoding='utf-8') as f: c = f.read()
-                c = _sub_path(c, 'input_file', esc("TURNER_IN"))
-                c = _sub_path(c, 'output_file', esc("TURNER_OUT"))
+                c = re.sub(r'input_file\s*=\s*r"[^"]+"', f'input_file = r"{esc("TURNER_IN")}"', c)
+                c = re.sub(r'output_file\s*=\s*r"[^"]+"', f'output_file = r"{esc("TURNER_OUT")}"', c)
                 with open(self.SCRIPTS["csv_turner"], 'w', encoding='utf-8') as f: f.write(c)
 
-            # 更新 doiexacter.py
+            # 更新 doiexacter.py (新增保存逻辑)
             if os.path.exists(self.SCRIPTS["doiexacter"]):
                 with open(self.SCRIPTS["doiexacter"], 'r', encoding='utf-8') as f: c = f.read()
-                c = _sub_path(c, 'INPUT_FILE', esc("EXACT_IN"))
-                c = _sub_path(c, 'CSV_FILE', esc("EXACT_OUT"))
+                c = re.sub(r'INPUT_FILE\s*=\s*r"[^"]+"', f'INPUT_FILE = r"{esc("EXACT_IN")}"', c)
+                c = re.sub(r'CSV_FILE\s*=\s*r"[^"]+"', f'CSV_FILE = r"{esc("EXACT_OUT")}"', c)
                 with open(self.SCRIPTS["doiexacter"], 'w', encoding='utf-8') as f: f.write(c)
                 
             messagebox.showinfo("成功", "所有脚本参数同步保存成功")
@@ -466,28 +432,6 @@ class PaperAutomationConsole:
 
     def _fill(self, ent, m):
         if m: ent.delete(0, tk.END); ent.insert(0, m.group(1))
-
-    def _extract_path(self, content, var_name):
-        """从脚本内容中提取路径，支持 r"..." 和 os.path.join(...) 两种格式"""
-        # 格式1: VAR = r"path"
-        m = re.search(var_name + r'\s*=\s*r"([^"]+)"', content)
-        if m: return m.group(1)
-        # 格式2: VAR = os.path.join(_BASE_DIR, "sub", "path")
-        m = re.search(var_name + r'\s*=\s*os\.path\.join\(([^)]+)\)', content)
-        if m:
-            args = [a.strip().strip('"').strip("'") for a in m.group(1).split(',')]
-            # 将 _BASE_DIR 替换为实际项目路径
-            resolved = [BASE_DIR if a == '_BASE_DIR' else a for a in args]
-            return os.path.join(*resolved)
-        # 格式3: VAR = "path"
-        m = re.search(var_name + r'\s*=\s*"([^"]+)"', content)
-        if m: return m.group(1)
-        return None
-
-    def _fill_path(self, ent, content, var_name):
-        """提取路径并填充到 Entry 控件"""
-        val = self._extract_path(content, var_name)
-        if val: ent.delete(0, tk.END); ent.insert(0, val)
 
     def browse_path(self, key):
         p = filedialog.askopenfilename() if "CSV" in key or "IN" in key or "OUT" in key else filedialog.askdirectory()

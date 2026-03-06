@@ -12,20 +12,17 @@ import traceback  # 添加traceback用于详细错误日志
 from typing import List, Optional, Dict
 from datetime import datetime, timedelta
 
-# 项目根目录（自动获取）
-_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 # 配置参数
 WEBSITE_URL = "https://pubmed.ncbi.nlm.nih.gov/"
 SEARCH_QUERY = "(PCL) AND (Light curing)"
-OUTPUT_FOLDER = os.path.join(r"D:\PaperTtest", "RSS")
-CSV_FILE = os.path.join(r"D:\PaperTtest", "PaperDoi.csv")
+OUTPUT_FOLDER = r"D:\Paperdownload\RSS"
+CSV_FILE = r"D:\Paperdownload-xzq\PaperDoi_updated-xzq_failed-1.csv"
 BROWSER_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-RSS_PNG = os.path.join(_BASE_DIR, "photos", "RSS.png")
-CREATE_PNG = os.path.join(_BASE_DIR, "photos", "create.png")
-NEXT_PROGRAM = os.path.join(_BASE_DIR, "Paperdownload.py")  # 下一个程序路径
-NEW_PROGRAM = os.path.join(_BASE_DIR, "SIdownload.py")  # 添加新程序的路径
-LOG_FILE = os.path.join(_BASE_DIR, "doi_extractor.log")  # 日志文件路径
+RSS_PNG = r"D:\Paperdownload\photos\RSS.png"
+CREATE_PNG = r"D:\Paperdownload\photos\create.png"
+NEXT_PROGRAM = r"D:\Paperdownload\Paperdownload.py"  # 替换为您的下一个程序路径
+NEW_PROGRAM = r"D:\Paperdownload\SIdownload.py"  # 添加新程序的路径
+LOG_FILE = r"D:\Paperdownload\doi_extractor.log"  # 日志文件路径
 
 # 配置日志
 logging.basicConfig(
