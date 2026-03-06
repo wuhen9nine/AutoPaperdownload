@@ -14,6 +14,7 @@ requests>=2.31.0
 
 # Image Processing
 Pillow>=10.0.0
+opencv-python>=4.8.0
 
 # Data Processing (standard library - no installation needed)
 # tkinter, csv, json, re, os, time, subprocess, webbrowser, urllib, datetime, typing, random

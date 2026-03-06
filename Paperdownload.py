@@ -16,22 +16,25 @@ from selenium.webdriver.edge.service import Service
 from selenium.webdriver.edge.options import Options
 import random
 
+# 项目根目录（自动获取）
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # 全局配置
 class Config:
     """应用程序配置类"""
-    DOWNLOAD_PATH = r"D:\PaperTest\html"  # HTML保存路径
-    JSON_PATH = r"D:\Paperdownload-xzq\Paperkeyword.json"  # 关键词json路径
-    DOMAIN_BRANCH_JSON = r"D:\Paperdownload-xzq\DomainBranch.json"  # 域名分支配置
-    DOWNLOAD_TEMPLATE_JSON = r"D:\Paperdownload-xzq\DownloadTemplates.json"  # 下载模板配置
-    DOWNLOAD_SETTINGS_JSON = r"D:\Paperdownload-xzq\DownloadSettings.json"  # 下载设置配置
-    LOGIN_CONFIG_JSON = r"D:\Paperdownload-xzq\LoginConfig.json"  # 登录配置路径
-    CSV_PATH = r"D:\Paperdownload-xzq\PaperDoi_updated-xzq_failed-1.csv"  # 论文列表CSV
-    EDGE_DRIVER_PATH = r"D:\Paperdownload-xzq\edgedriver\msedgedriver.exe"  # Selenium驱动路径
+    DOWNLOAD_PATH = os.path.join(r"D:\PaperTtest", "html")  # HTML保存路径
+    JSON_PATH = os.path.join(_BASE_DIR, "Paperkeyword.json")  # 关键词json路径
+    DOMAIN_BRANCH_JSON = os.path.join(_BASE_DIR, "DomainBranch.json")  # 域名分支配置
+    DOWNLOAD_TEMPLATE_JSON = os.path.join(_BASE_DIR, "DownloadTemplates.json")  # 下载模板配置
+    DOWNLOAD_SETTINGS_JSON = os.path.join(_BASE_DIR, "DownloadSettings.json")  # 下载设置配置
+    LOGIN_CONFIG_JSON = os.path.join(_BASE_DIR, "LoginConfig.json")  # 登录配置路径
+    CSV_PATH = os.path.join(r"D:\PaperTtest", "PaperDoi.csv")  # 论文列表CSV
+    EDGE_DRIVER_PATH = os.path.join(_BASE_DIR, "edgedriver", "msedgedriver.exe")  # Selenium驱动路径
     USE_SELENIUM = False  # 是否使用Selenium方案
     DELAY_BETWEEN_PAPERS = 60  # 每篇论文间隔时间(秒)
     PAGE_LOAD_TIMEOUT = 40  # 页面加载超时时间(秒)
     DOCUMENT_EXTENSIONS = ["pdf"]  # 支持的文档扩展名
-    PAPER_DOWNLOAD_FOLDER = r"D:\Paperdownload-xzq\Paper-xzq"  # Paper下载文件夹
+    PAPER_DOWNLOAD_FOLDER = os.path.join(r"D:\PaperTtest", "Paper")  # Paper下载文件夹
 
     @classmethod
     def ensure_directories_exist(cls):

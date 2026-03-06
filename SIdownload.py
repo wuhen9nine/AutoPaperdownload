@@ -9,17 +9,20 @@ from urllib.parse import urlparse
 from datetime import datetime
 import json
 
+# 项目根目录（自动获取）
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # 全局配置
 CONFIG = {
-    "DOWNLOAD_PATH": r"D:\LAPaperdownload\html",  # HTML保存路径
-    "JSON_PATH": r"D:\LAPaperdownload\SIkeyword.json",  # 关键词json路径
-    "CSV_PATH": r"D:\LAPaperdownload\LAsPaperDoi.csv",  # 论文列表CSV
-    "EDGE_DRIVER_PATH": r"D:\LAPaperdownload\edgedriver\msedgedriver.exe",  # Selenium驱动路径
+    "DOWNLOAD_PATH": os.path.join(_BASE_DIR, "html"),  # HTML保存路径
+    "JSON_PATH": os.path.join(_BASE_DIR, "SIkeyword.json"),  # 关键词json路径
+    "CSV_PATH": os.path.join(_BASE_DIR, "PaperDoi.csv"),  # 论文列表CSV
+    "EDGE_DRIVER_PATH": os.path.join(_BASE_DIR, "edgedriver", "msedgedriver.exe"),  # Selenium驱动路径
     "USE_SELENIUM": False,  # 是否使用Selenium方案
     "DELAY_BETWEEN_PAPERS": 5,  # 每篇论文间隔时间(秒)
     "PAGE_LOAD_TIMEOUT": 40,  # 页面加载超时时间(秒)
     "DOCUMENT_EXTENSIONS": ["pdf", "docx", "doc", "zip"],  # 支持的文档扩展名
-    "SI_DOWNLOAD_FOLDER": r"D:\LAPaperdownload\LAPaper"  # SI下载文件夹
+    "SI_DOWNLOAD_FOLDER": os.path.join(_BASE_DIR, "SI")  # SI下载文件夹
 }
 
 class PaperProcessor:

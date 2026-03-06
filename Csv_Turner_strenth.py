@@ -1,4 +1,8 @@
 import csv
+import os
+
+# 项目根目录（自动获取）
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def filter_failed_dois(input_file, output_file):
     """
@@ -67,8 +71,8 @@ def filter_failed_dois(input_file, output_file):
 # 使用示例
 if __name__ == "__main__":
     # 在这里指定输入和输出文件路径
-    input_file = r"D:/Paperdownload-xzq/PaperDoi_updated-xzq-1.csv"  # 替换为您的输入文件路径
-    output_file = r"D:/Paperdownload-xzq/PaperDoi_updated-xzq_failed-1.csv"  # 替换为您的输出文件路径
+    input_file = os.path.join(_BASE_DIR, "PaperDoi_updated.csv")  # 替换为您的输入文件路径
+    output_file = os.path.join(_BASE_DIR, "PaperDoi_failed.csv")  # 替换为您的输出文件路径
     
     # 调用筛选函数
     result = filter_failed_dois(input_file, output_file)

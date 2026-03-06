@@ -3,12 +3,15 @@ import os
 import re
 import logging
 
+# 项目根目录（自动获取）
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # ==============================================================================
 #  【配置参数】 - 由 config_manager.py 自动修改
 # ==============================================================================
-INPUT_FILE = r"D:\Paperdownload - 副本\PubMed_RSS_20250926_145335.txt"
-CSV_FILE = r"D:\PaperTest"
-LOG_FILE = r"D:\Paperdownload\doi_extractor.log"
+INPUT_FILE = os.path.join(_BASE_DIR, "input.txt")
+CSV_FILE = os.path.join(_BASE_DIR, "PaperDoi.csv")
+LOG_FILE = os.path.join(_BASE_DIR, "doi_extractor.log")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
